@@ -19,13 +19,14 @@ RUN apt-get update && apt-get install -y \
       rm -rf /var/lib/apt/lists/*
 
 ENV WS_DENSO /root/ws_denso
-RUN mkdir -p $WS_DENSO/src
-WORKDIR $WS_DENSO/src
+RUN source /opt/ros/$ROS_DISTRO/setup.bash && \
+      mkdir -p $WS_DENSO/src
 
+WORKDIR $WS_DENSO/src
 RUN git clone https://github.com/RoboticsYY/denso_robot_ros.git && \
       git clone https://github.com/RoboticsYY/denso_cobotta_ros.git && \
       cd .. && \
-      catkin config --extend /opt/ros/$ROS_DISTRO && \
+      catkin config --extend /root/ws_moveit && \
       catkin build
 
 WORKDIR $WS_DENSO
