@@ -18,15 +18,47 @@ RUN apt-get update && apt-get install -y \
       ros-kinetic-ros-controllers && \
       rm -rf /var/lib/apt/lists/*
 
-ENV WS_DENSO /root/ws_denso
-RUN source /opt/ros/$ROS_DISTRO/setup.bash && \
-      mkdir -p $WS_DENSO/src
+ENV DEPEND /root/depends
+RUN mkdir -p $DEPEND
 
-WORKDIR $WS_DENSO/src
-RUN git clone https://github.com/RoboticsYY/denso_robot_ros.git && \
-      git clone https://github.com/RoboticsYY/denso_cobotta_ros.git && \
+# install openvino 
+WORKDIR $DEPEND
+RUN mkdir -p openvino_binart && cd openvino_binart && \
+    apt-get update && apt-get install -y cpio && \
+      rm -rf /var/lib/apt/lists/*
+# wget openvino_R5
+RUN wget -c http://registrationcenter-download.intel.com/akdlm/irc_nas/15078/l_openvino_toolkit_p_2018.5.455.tgz && \
+    tar -xvf l_openvino_toolkit_p_2018.5.455.tgz &&rm l_openvino_toolkit_p_2018.5.455.tgz && \
+    cd l_openvino_toolkit_p_2018.5.455 && \
+    ./install_cv_sdk_dependencies.sh && \
+    sed -i 's/ACCEPT_EULA=decline/ACCEPT_EULA=accept/g' silent.cfg && \
+    ./install.sh --silent silent.cfg
+# install dependencies
+RUN cd /opt/intel/computer_vision_sdk/install_dependencies && \
+    ./install_NEO_OCL_driver.sh
+
+# install gpg
+WORKDIR $DEPEND
+RUN git clone --depth=1 https://github.com/atenpas/gpg.git && \
+    cd gpg && \
+    mkdir build && cd build && \
+    cmake .. && make && make install && \
+    ldconfig
+
+ENV WS_DENSO /root/ws_denso
+
+WORKDIR $WS_DENSO
+RUN . /opt/ros/$ROS_DISTRO/setup.bash && \  
+    . /opt/intel/computer_vision_sdk/bin/setupvars.sh && \
+      echo $InferenceEngine_DIR && \
+      mkdir src && cd src && \
+      git clone --depth=1 https://github.com/RoboticsYY/denso_robot_ros.git && \
+      git clone --depth=1 https://github.com/RoboticsYY/denso_cobotta_ros.git && \
+      git clone --depth=1 https://github.com/RoboticsYY/cobotta_pick_place.git && \
+      git clone --depth=1 https://github.com/atenpas/gpd.git && \
       cd .. && \
-      catkin config --extend /root/ws_moveit && \
+      catkin config --extend /root/ws_moveit/install \ 
+                    --cmake-args -DUSE_CAFFE=OFF -DUSE_OPENVINO=ON && \
       catkin build
 
 WORKDIR $WS_DENSO
