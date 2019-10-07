@@ -45,20 +45,30 @@ RUN git clone --depth=1 https://github.com/atenpas/gpg.git && \
     cmake .. && make && make install && \
     ldconfig
 
-ENV WS_DENSO /root/ws_denso
+# fix moveit code
+WORKDIR /root/ws_moveit
+RUN number=`sed -n '/if (callIK(ik_query, adapted_ik_validity_callback, ik_timeout_, state, project && a == 0))/=' ./src/moveit/moveit_core/constraint_samplers/src/default_constraint_samplers.cpp` && \
+    echo $number && \
+    sed -i "${number}a\    if (callIK(ik_query, adapted_ik_validity_callback, ik_timeout_, state, project || a == 0))" ./src/moveit/moveit_core/constraint_samplers/src/default_constraint_samplers.cpp && \
+    sed -i "${number}d" ./src/moveit/moveit_core/constraint_samplers/src/default_constraint_samplers.cpp
+RUN catkin build
 
+# install demo code
+ENV WS_DENSO /root/ws_denso
 WORKDIR $WS_DENSO
 RUN . /opt/ros/$ROS_DISTRO/setup.bash && \  
     . /opt/intel/computer_vision_sdk/bin/setupvars.sh && \
       echo $InferenceEngine_DIR && \
       mkdir src && cd src && \
-      git clone --depth=1 https://github.com/RoboticsYY/denso_robot_ros.git && \
-      git clone --depth=1 https://github.com/RoboticsYY/denso_cobotta_ros.git && \
-      git clone --depth=1 https://github.com/RoboticsYY/cobotta_pick_place.git && \
+      git clone -b WIP/pick_place_test https://github.com/RoboticsYY/denso_cobotta_ros.git && \
+      git clone -b WIP/pick_place_test https://github.com/RoboticsYY/cobotta_pick_place.git && \
       git clone --depth=1 https://github.com/atenpas/gpd.git && \
       cd .. && \
       catkin config --extend /root/ws_moveit/install \ 
-                    --cmake-args -DUSE_CAFFE=OFF -DUSE_OPENVINO=ON && \
+                    --cmake-args -DUSE_CAFFE=OFF -DUSE_OPENVINO=ON -DBUILD_RANDOM_PICK=ON && \
       catkin build
 
 WORKDIR $WS_DENSO
+
+RUN git config --global user.email "yu.yan@intel.com"
+RUN git config --global user.name "RoboticsYY"
