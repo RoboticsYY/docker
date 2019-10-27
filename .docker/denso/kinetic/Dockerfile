@@ -1,6 +1,6 @@
 FROM moveit/moveit:kinetic-source
 
-MAINTAINER Yu Yan yu.yan@intel.com
+LABEL MAINTAINER = 'Yu Yan (yu.yan@intel.com)'
 
 SHELL ["/bin/bash", "-c"]
 

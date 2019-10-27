@@ -1,6 +1,6 @@
 FROM acutronicrobotics/moveit2:dashing-alpha
 
-MAINTAINER Yu Yan yu.yan@intel.com
+LABEL MAINTAINER = 'Yu Yan (yu.yan@intel.com)'
 
 ARG http_proxy
 
